@@ -1,0 +1,204 @@
+
+HOW TO DEFINE NEW KEYBOARD TEMPLATES
+====================================
+
+First, make sure you have absolutely the latest version!  Someone may have
+defined the keyboard you're interested in already, or, more importantly, the
+data format may have changed (this has happened once, and converting from
+the old format to the new format was non-trivial.)  You can get the latest
+version of xkeycaps from http://www.jwz.org/xkeycaps/.
+
+XKeyCaps needs to know four pieces of information about each keyboard:
+
+  -  The physical layout of the keyboard, meaning the size and position
+     of each key and the blank spaces between them;
+  -  The text that is physically printed on the surface of each key;
+  -  The KeyCodes by which the X server knows each key;
+  -  The contents of the default KeyCode->KeySym map which is in effect
+     just after X starts up and before any user customizations.
+
+Since any subset of these four data may be shared among different keyboards,
+they are specified independently, each in its own file.  If the keyboard you
+use has keys shaped exactly like another keyboard that xkeycaps already knows
+about, then you can use the existing data; for example, pc101-geom.h is used
+by a number of keyboards (RS6K, SGI, etc.)
+
+If you're defining a template for a non-US version of a keyboard which xkeycaps
+already knows about, you will probably only need to change two things: the
+default keymap, and the text that is physically printed on the key surfaces.
+The geometry and keycodes are generally the same (and often the keycaps are
+very similar.)
+
+Geometry:
+=========
+  If your keyboard is not shaped exactly like one that is already present,
+  you will need to create a new -geom.h file for it.  Start with the one that
+  is closest to the shape of your keyboard, and modify it.  The "rows" of a
+  keyboard are defined in the -geom.h file as a set of { width, height }
+  pairs of each key on the keyboard in some arbitrary units.  If the height
+  is specified as 0, then this means that this area is a blank space between
+  keys instead of a key itself.
+
+  If your keyboard uses the same (or very similar) geometry as another
+  keyboard, there is a good chance you can reuse an existing -caps.h file as
+  well.  This file defines the strings which are physically printed on the key
+  surfaces.  There may be up to three strings on each key: upper left, lower
+  left, and upper right.  If there is no string, then 0 should be used.  This
+  file must have exactly one entry for each actual key on the keyboard (and
+  should not have entries for the "blank" spaces.)  The keys should appear in
+  the same order as in the -geom.h file, that is, left-to-right, top-to-bottom.
+
+KeyCodes:
+=========
+  The -codes.h files define the keycodes which the X server sees for this
+  keyboard hardware.  The entries should be in the same order as in the other
+  two files, and there must be exactly the same number of entries in the
+  -codes.h and the -caps.h files (which is the total number of keys on the
+  keyboard.)
+
+  If a key on the keyboard is not recognised by the X server at all (that is,
+  it is intercepted locally without clients getting a KeyPress event at all)
+  then its keycode should be specified as 0.
+
+  The easiest way to find the keycodes for the various keys is to run the `xev'
+  program and type each key in turn.  But be careful of window managers which
+  intercept certain keys for their own purposes.
+
+KeyMaps:
+========
+  The -map.h files contain the default keymaps which the X servers use for the
+  various keyboards.  It's very easy to generate these files: the enclosed
+  shell script called `build-map.sh' will parse the output of the `xmodmap'
+  program, and write a -map.h file to standard output.  This generated file
+  will encode the current state of the keymap.
+
+  It is VERY IMPORTANT that you run the build-map script before you have ever
+  changed your keyboard mapping with xmodmap: you don't want to capture your
+  personal modifications within the XKeyCaps configuration!  If you make any
+  changes to your keyboard, find the place where your init files do this, and
+  comment it out.  Then restart the X server (this may mean logging out and
+  then back in again.)  Then build the -map.h file.
+
+Installation:
+=============
+  After creating the various files, add them to the appropriate place in the
+  file kbds/all-kbds.h -- use one of the other blocks in that file as an
+  example, it should be pretty obvious what to do.
+
+  The first argument to the KBD() macro is the short name which will be
+  accepted by the -kbd command-line option to select this keyboard.
+
+  The second argument is the name of the manufacturer of the computer on
+  which this keyboard is most commonly found: for example, "Sun" or "NCD" (in
+  the case of hardware vendors who make their own keyboards) or "PC" (in the
+  case of operating systems running on generic PC hardware.)
+
+  The third string is the name or description of the keyboard hardware
+  itself.  This should contain the name of the keymap being encoded in
+  parentheses, if that makes sense.
+
+  The fourth argument, if present, is the name of the X server ID string, if
+  any, which would suggest that this keyboard might be in use.  (You can find
+  this string by running the `xdpyinfo' program.)
+
+  After that comes the pointers to the various data defined in the geom,
+  caps, codes, and map files.
+
+  It's a good idea to specify an X server ID string if possible, because 
+  otherwise it will no doubt pick the wrong keyboard by default, and naive 
+  users could get hurt.
+
+  If you are defining a keyboard for a type of machine which has multiple
+  keyboards, you might want to add an OS-specific file for querying the
+  keyboard hardware directly, as `sunOS.c' and `hpux.c' do.  (This only helps
+  when $DISPLAY points to screen zero of the local machine, of course.)
+
+Debugging:
+==========
+  If you have mis-specified some data, then when you select your new keyboard,
+  xkeycaps will print "DATA ERROR" messages to stderr describing what it thinks
+  is wrong with your input files.
+
+  An easy mistake to make is leaving entries out of either the -caps or -codes
+  files; these will be flagged with messages like "101 keycaps vs 100
+  keycodes", meaning that a keycode is missing somewhere.  It should be easy to
+  figure out which one is missing by simply pressing the keys in turn, and
+  seeing when the wrong one lights up in the xkeycaps display.
+
+  A message containing "reached end of caps/codes tables with keys left over"
+  means that the -kbd file defined more real keys than there are entries in the
+  -caps and -codes files.  This could mean that there are entries missing from
+  both the -caps and -codes files, or it could mean that there is a key where
+  there should be a blank space in the -geom file.
+
+  A message containing "couldn't find keymap entry" means that some key on the
+  keyboard generates a keycode which is not mentioned in the -map file.  This
+  is not necessarily an error on your part: some vendors' default maps do not
+  assign all existant keycodes.  In that case, you should suppress this warning
+  by adding a dummy entry to the -map file; see kbds/sun5-ow-map.h for an
+  example.
+
+  The easiest way to determine whether you have the correct default
+  configuration is to execute the "Write Output" command, selecting the
+  "Changed Keys" button.  If none of the lines written begin with "keycode",
+  then you've gotten the keysyms right.  PLEASE DO THIS!  I have no way of
+  testing keyboard configurations of keyboards I don't have, so it's up to you.
+  Make sure you haven't run xmodmap or executed the "Restore Default Map"
+  command since you started your X server, or your results will be invalid.
+
+  Type each key on the keyboard in turn, and verify that the corresponding key
+  in the xkeycaps display lights up.
+
+  When you're done, it would be good if you would execute the "Restore Default
+  Map" command, and try living with the resulting configuration for the rest of
+  the day, just to make sure that you didn't inadvertantly cripple some key.
+
+Clean-Up Checklist:
+==================
+  = If you added a new -geom.h file, did you really, really need to?  Given how
+    often people send me -geom files that are identical copies of ones that are
+    already in the distribution, chances are you didn't.  If your new
+    keyboard has the same physical shape as another known keyboard, then let
+    the two of them share the geometry file.  This saves memory and makes the
+    distribution smaller.
+
+  = If you added a new -map.h file, did you really, really need to?  Again, 
+    people seem to do this all the time when they don't really need to.  Even
+    if you added both -geom.h and -codes.h files, you will probably be able
+    to reuse an existing -map.h file, since most X servers have exactly one
+    default map, and don't change it depending on what keyboard hardware is
+    attached.  Please check to see if your new map is the same as an already-
+    existing map, because otherwise, I have to do it myself.
+
+  = If you added a new -caps.h file, did you really, really need to?
+    Likewise, people do this all the time when they don't really need to.  
+    Even if you added a -geom.h file, you might still be able to reuse an
+    existing -caps.h file, because many keyboards with slightly different
+    physical shapes have the same numbers of keys and the same strings
+    printed on them.  Again, please check, because otherwise, I have to do
+    it myself.
+
+  = If you added a new -caps.h file, and your strings include non-ASCII (8-bit)
+    characters, please write them in octal (that is, "\374" rather than "ü"),
+    since not all C compilers can cope with high-bit string constants (also,
+    the characters are less likely to get mangled if the file is emailed.)
+
+  = Did you update the comments at the top of the files you added/modified?
+    People rarely remember to do this either, and since chances are you started
+    out by copying another file and editing the copy, the file for your new
+    BAR102 keyboard will have a comment at the top that says it's a FOO101
+    keyboard instead, which is not a good thing (and -- that's right -- it's
+    another thing I need to clean up if you don't...  help me out, here!)
+
+    Be as specific as possible in the comments: name the vendor of your
+    keyboard, and a model number if you can find it.  Name the X and OS
+    versions you used when generating the codes and maps (for example,
+    "XFree86 2.0 on Linux 1.2.13" or "OpenWindows 3.0 on SunOS 5.1".)
+    As the vendors tend to change the maps from release to release, these
+    details are important.
+
+And that's about it!  Once you've added a new keyboard definition, please send
+your changes to me, and I will include them in the next release.  Send me the
+new files you added, plus the `diff -c' changes you made to `kbds/all-kbds.h'.
+
+				     --

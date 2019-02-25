@@ -1,0 +1,181 @@
+From - -
+From: Craig Johnston <Craig.E.Johnston@boeing.com>
+Subject: FYI: How I enabled the extra keys on my MS Natural keyboard
+Date: Fri, 06 Dec 1996 00:00:00 GMT
+Message-ID: <32A88D01.41C6@boeing.com>
+Organization: Boeing Defense & Space
+Newsgroups: comp.sys.sgi.misc,comp.sys.sgi.admin
+
+I know some of you are using a Microsoft Natural keyboard with your
+Indy or Indigo2 as I am.  I wanted to make use of the extra "windoze"
+keys along the bottom row, but couldn't find any reference as to how to
+do it.  So here's how I did it.
+
+The xev utility told me that the scan codes for the 3 keys are 147,148,
+and 149 (left to right).  I then copied and patched the US keymap file
+(US.xkm) to have a key symbol for those codes (US_msnatural.xkm).  Use
+your favorite binary editor to make the change.
+
+% od -x /var/X11/input/US.xkm > USxkm.dmp
+% od -x /var/X11/input/US_msnatural.xkm > USxkmnat.dmp
+% diff USxkm.dmp USxkmnat.dmp
+66a67,70
+> 0002040 0000 0000 0000 0000 0000 0000 0000 fed0
+> 0002060 0000 0000 0000 fed4 0000 0000 0000 fed2
+> 0002100 0000 0000 0000 0000 0000 0000 0000 0000
+> *
+
+This adds the keysym value of 0xfed0, 0xfed4, and 0xfed2 for the
+keycodes 147, 148, and 149 respectively.  From
+/usr/include/X11/keysymdef.h, these values correspond to
+XK_First_Virtual_Screen, XK_Last_Virtual_Screen, and
+XK_Next_Virtual_Screen.  I chose these more or less arbitrarily.
+
+Now you have to install the new keymap as the default.  As root (the
+only way to make the change stick) start the 'keyboards' GUI program.
+Select your new keymap file (US_msnatural) and select 'Set System
+Default' and 'Apply'.  Don't panic when you see the errors from xmodmap
+complaining about the keycode being out of range.  You now have to
+restart the xserver (reboot is best) to get it to install the keymap.
+
+The tail end of 'xmodmap -pk' should now look like;
+
+...
+    138         
+    139         
+    140         0xffad (KP_Subtract)    
+    141         
+    142         
+    143         
+    144         
+    145         
+    146         
+    147         0xfed0 (First_Virtual_Screen)   
+    148         0xfed4 (Last_Virtual_Screen)    
+    149         0xfed2 (Next_Virtual_Screen)    
+    150         
+...
+
+Now you just have to figure out what you want to do with the keys.
+I added the following to my .4Dwmrc file,
+
+# SGI added key bindings
+  ....
+  <key>First_Virtual_Screen root|icon|window      f.switch_desk "Desk 1"
+  Shift<key>First_Virtual_Screen root|icon|window f.switch_desk "Desk 2"
+  <key>Last_Virtual_Screen root|icon|window       f.switch_desk "Desk 2"
+  Shift<key>Last_Virtual_Screen root|icon|window  f.switch_desk "Desk 1"
+  <key>Next_Virtual_Screen root|icon|window       f.lower
+  Shift<key>Next_Virtual_Screen root|icon|window  f.raise
+  ....
+
+Now I can switch desks at the push of a button.  I know I can get the
+same effect by binding some other Alt or Ctrl combination, but this is
+a little nicer.
+
+As of 6.2 SGI has also included the XKEYBOARD extension stuff that could
+have made this a lot easier, but the X server (Xsgi) doesn't appear to
+use it.  It builds a X0-defaults.xkm file in the
+/usr/lib/X11/xkb/compiled directory, but does not use it.  Also the
+format of this and other *.xkm files built by xkbcomp are quite a bit
+different from the *.xkm files in /var/X11/input.  Anyone know what is
+up here?
+
+Hope this is of use to someone.  Comments and fixes welcome.
+
+
+From - -
+From: Jamie Zawinski <jwz@jwz.org>
+Subject: SGI and MS keyboard
+To: Craig.E.Johnston@boeing.com
+Date: Fri, 16 May 1997 16:39:01 -0700
+Message-ID: <337CF015.55D5818@netscape.com>
+
+Hey.  I saw your message <32A88D01.41C6@boeing.com> about how to
+enable the extra keys on the MS keyboard, and I did it and it works
+great -- mostly.  Thanks for figuring that out...
+
+I'm running 6.2, and now when I hit RET in a Console or "winterm"
+window, I get a beep and the characters "00q" inserted.  ^C works, but
+no other characters will insert themselves.
+
+But "xterm" works fine.
+
+Any ideas?
+
+(It's so goofy that the SGI server will report keycodes for those
+keys, but won't let you map them unless you've mucked with the other
+maps; that's just lame...)
+
+
+From - -
+From: Jamie Zawinski <jwz@jwz.org>
+Subject: Re: SGI and MS keyboard
+To: Craig Johnston <johnston@tortilla.ds.boeing.com>
+Date: Sun, 18 May 1997 14:01:30 -0700
+Message-ID: <337F6E2A.E6CA7B68@netscape.com>
+References: <337CF015.55D5818@netscape.com>
+        <9705180835.ZM18578@tortilla.ds.boeing.com>
+
+Craig Johnston wrote:
+> 
+> I would guess that you are re-binding the RET (KP_ENTER) key somewhere
+> (.Xdefaults, .Sgiresources,/usr/lib/X11/app-defaults/XWsh).  I'm not sure
+> what you mean when you say "no other characters will insert themselves".
+> How about the enter key on the keypad?
+
+By "no other characters" I meant that *all* keys are behaving this way:
+here's what I see when I type ^V a ^V b ^V c --  ^[[087q^[[105q^[[103q
+I just typed every key on the keyboard; they all send function-key
+sequences, except for
+
+        kp_8 sends ^H
+        kp_4 sends ^D
+        kp_5 sends ^E
+        kp_6 sends ^F
+        kp_1 sends ^A
+        kp_2 sends ^B
+        kp_3 sends ^C
+        home, pageup, pagedown, and end work
+
+The few keys that I've rebound with xmodmap seem to be working... hmm...
+
+
+Oh, I've figured it out!  This is totally weird.
+
+If I reset all the xmodmap state to the default (I used the xkeycaps
+"restore default map" command) everything starts working again.  The
+problem was caused by some changes I had made to my xmodmap settings.
+
+If the keyboard is in the default state, feeding this file to xmodmap
+will make the console lose its mind:
+
+        remove Mod2  = Num_Lock
+        keycode 0x21 = Meta_L
+        keycode 0x41 = Meta_R
+
+This remarkably similar file will *not* make it lose its mind:
+
+        remove Mod2  = Num_Lock
+        keycode 0x21 = Alt_L
+        keycode 0x41 = Alt_R
+
+Nor will this:
+
+        keycode 0x21 = Alt_L
+        keycode 0x41 = Alt_R
+
+or this:
+
+        keycode 0x21 = Meta_L
+        keycode 0x41 = Meta_R
+
+or this:
+
+        remove Mod2  = Num_Lock
+
+(The default states of 0x21/0x41 are "Alt_L Meta_L" and "Alt_R Meta_R".)
+So, unless xwsh sees a Mod2 modifier, *or* and has Alt keys available
+(meta won't do) it starts thinking that everything is a function key.
+
+That is wacky.  But at least now I can make it work...

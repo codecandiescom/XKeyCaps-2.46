@@ -1,0 +1,23 @@
+Begin3
+Title:          xkeycaps
+Version:        2.46
+Entered-date:   12DEC99
+Description:    A graphical front-end to xmodmap.
+                Understands 210 different keyboards.
+                Home page: http://www.jwz.org/xkeycaps/
+Keywords:       xmodmap, keyboard, keymaps, loadkeys, keytables, X11
+Author:         jwz@jwz.org (Jamie Zawinski)
+Maintained-by:  jwz@jwz.org (Jamie Zawinski)
+Primary-site:   ftp.x.org /contrib/applications/
+                484K xkeycaps-2.46.tar.Z
+                10K   xkeycaps.README
+                1K   xkeycaps.lsm
+Alternate-site: sunsite.unc.edu /pub/X11/contrib/applications/
+                484K xkeycaps-2.46.tar.Z
+                10K   xkeycaps.README
+                1K   xkeycaps.lsm
+Platforms:      Linux, Irix, SunOS, Solaris, HPUX, AIX, FreeBSD, NetBSD,
+                BSDI, SCO, OSF1, Ultrix, NeXT, DG-UX, VMS.
+                Requires X11 (and the Athena widgets.)
+Copying-policy: BSD
+End

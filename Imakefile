@@ -1,0 +1,397 @@
+/**/# Imakefile for xkeycaps;
+/**/# Copyright (c) 1991, 1992, 1993, 1994, 1995, 1999 Jamie Zawinski.
+
+/*
+ *  To specify a different default keyboard (for when the vendor display
+ *  string isn't recognised) do something like this:
+ *
+ *   KBD_DEFINES = -DDEFAULT_KBD_NAME="\"Sun3\""
+ *
+ *  to make there not be a default (meaning the keyboard must be specified
+ *  if the vendor display string isn't recognised) you can do
+ *
+ *   KBD_DEFINES = -DDEFAULT_KBD_NAME=0
+ *
+ *  If you get a link error about _XInitKeysymDB being undefined, then add
+ *  -DNO_XInitKeysymDB to DEFINES.  In this case, you might also want to
+ *  add -DKEYSYMDB=\"/some/file/XKeysymDB\" to DEFINES, to tell XKeyCaps
+ *  where the vendor-specific keysym database file resides.  Otherwise, you
+ *  will have to set the $XKEYSYMDB environment variable before running this
+ *  program, or else it won't let you select from the set of vendor keysyms.
+ *
+ *  Folks running R4 or older don't get to select from the set of vendor
+ *  keysyms anyway.  (It's about time to upgrade, isn't it...?)
+ */
+
+     XTRAP_SRCS = $(CURRENT_DIR)/xtrap.c
+    SYSDEP_SRCS = $(CURRENT_DIR)/sunOS.c $(CURRENT_DIR)/hpux.c
+
+#ifdef HAVE_XTRAP
+  XTRAP_DEFINES = -DHAVE_XTRAP
+ XTRAP_INCLUDES = 
+     XTRAP_LIBS = -lXTrap
+     XTRAP_OBJS = $(CURRENT_DIR)/xtrap.o
+#endif
+
+#ifdef SunArchitecture
+    SYSDEP_OBJS = $(CURRENT_DIR)/sunOS.o
+#endif
+
+#ifdef HPArchitecture
+    SYSDEP_OBJS = $(CURRENT_DIR)/hpux.o
+
+   /* This nonsense seems to be necessary to get the passwd struct on all HP
+    * systems.  HP can't seem to make up their mind what preprocessor directive
+    * they want to use to tell their header files that they are being compiled
+    * on an HP.  Don't ask me to explain why these aren't the default...
+    * On some systems, -Ae defines all of these, but I don't believe that is
+    * (has been?) the case on all systems.
+    *
+    * Also, apparently "HPkeysyms.h" comes with HP's R5, but not MIT's R6, so
+    * we need to add the HP R5 directory to the end of the include path as 
+    * well.
+    */
+     HP_LOSSAGE = -D_HPUX_SOURCE -DHPUX -Dhpux -D__hpux -Dunix $(HP_LOSSAGE_2)\
+		  -I/usr/contrib/X11R6/include -I/usr/include/X11R5
+# if !HasGcc2
+     HP_LOSSAGE_2 = -Aa -Ae 
+# endif
+#endif
+
+#ifdef SGIArchitecture
+# ifndef HasGcc
+   /* This will cause the keyboard template data to go into a read-only
+      (.rodata) section of the file.  Given the existence of copy-on-write,
+      this is probably not a big deal, but it makes me feel good anyway. */
+   EXTRA_DEFINES = -use_readonly_const
+ EXTRA_LDOPTIONS = -rdata_shared
+# endif
+#endif
+
+
+          KBDIR = $(CURRENT_DIR)/kbds
+       INCLUDES = -I$(KBDIR) $(XTRAP_INCLUDES)
+        DEFINES = $(KBD_DEFINES) $(XTRAP_DEFINES) $(HP_LOSSAGE)
+           SRCS = $(CURRENT_DIR)/xkeycaps.c $(CURRENT_DIR)/KbdWidget.c \
+                  $(CURRENT_DIR)/KeyWidget.c $(CURRENT_DIR)/info.c \
+                  $(CURRENT_DIR)/actions.c $(CURRENT_DIR)/commands.c \
+                  $(CURRENT_DIR)/guess.c $(CURRENT_DIR)/all-kbds.c \
+                  $(SYSDEP_SRCS) $(XTRAP_SRCS)
+           OBJS = $(CURRENT_DIR)/xkeycaps.o $(CURRENT_DIR)/KbdWidget.o \
+                  $(CURRENT_DIR)/KeyWidget.o $(CURRENT_DIR)/info.o \
+                  $(CURRENT_DIR)/actions.o $(CURRENT_DIR)/commands.o \
+                  $(CURRENT_DIR)/guess.o $(CURRENT_DIR)/all-kbds.o \
+                  $(SYSDEP_OBJS) $(XTRAP_OBJS)
+LOCAL_LIBRARIES = $(XAWLIB) $(XTOOLLIB) $(XTRAP_LIBS) $(XMULIB) $(XLIB)
+
+     ALL_KBDS_1 = $(KBDIR)/NeXT-caps.h $(KBDIR)/NeXT-codes.h \
+                  $(KBDIR)/NeXT-geom.h $(KBDIR)/NeXT-map.h \
+                  $(KBDIR)/amiga-codes.h $(KBDIR)/amiga-de-caps.h \
+                  $(KBDIR)/amiga-de-map.h $(KBDIR)/amiga96-geom.h \
+                  $(KBDIR)/apollo-caps.h $(KBDIR)/apollo-codes.h \
+                  $(KBDIR)/apollo-geom.h $(KBDIR)/apollo-map.h \
+                  $(KBDIR)/aviion300-codes.h $(KBDIR)/aviion300-map.h \
+                  $(KBDIR)/butterfly-caps.h $(KBDIR)/butterfly-codes.h \
+                  $(KBDIR)/butterfly-geom.h $(KBDIR)/butterfly-map.h \
+                  $(KBDIR)/butterflyde-caps.h $(KBDIR)/butterflyde-map.h \
+                  $(KBDIR)/cc107-caps.h $(KBDIR)/cc107-codes.h \
+                  $(KBDIR)/cc107-geom.h $(KBDIR)/chergo-codes.h \
+                  $(KBDIR)/chergo-de-caps.h $(KBDIR)/chergo-de-map.h \
+                  $(KBDIR)/chergo-geom.h $(KBDIR)/cramer-caps.h \
+                  $(KBDIR)/cramer-codes.h $(KBDIR)/cramer-geom.h \
+                  $(KBDIR)/cramer-sgi-codes.h $(KBDIR)/dell-codes.h \
+                  $(KBDIR)/dell-map.h $(KBDIR)/elite-caps.h \
+                  $(KBDIR)/elite-codes.h $(KBDIR)/elite-geom.h \
+                  $(KBDIR)/explorer-caps.h $(KBDIR)/explorer-codes.h \
+                  $(KBDIR)/explorer-geom.h $(KBDIR)/explorer-map.h
+     ALL_KBDS_2 = $(KBDIR)/ga5k-caps.h $(KBDIR)/ga5k-codes.h \
+                  $(KBDIR)/ga5k-map.h $(KBDIR)/gvc-caps.h \
+                  $(KBDIR)/gvc-codes.h $(KBDIR)/gvc-geom.h \
+                  $(KBDIR)/gvc-map.h $(KBDIR)/gw2k-caps.h \
+                  $(KBDIR)/gw2k-codes.h $(KBDIR)/gw2k-geom.h \
+                  $(KBDIR)/gw2k-map.h $(KBDIR)/gw2kn-codes.h \
+                  $(KBDIR)/gw2kn-geom.h $(KBDIR)/gw2kn-map.h \
+                  $(KBDIR)/hclpc-caps.h $(KBDIR)/hclpc-codes.h \
+                  $(KBDIR)/hclpc-geom.h $(KBDIR)/hclpc-map.h \
+                  $(KBDIR)/hhkb-caps.h $(KBDIR)/hhkb-codes.h \
+                  $(KBDIR)/hhkb-geom.h $(KBDIR)/hp4032x-codes.h \
+                  $(KBDIR)/hp4032x-geom.h $(KBDIR)/hp4032x-map.h \
+                  $(KBDIR)/hp700rx-codes.h $(KBDIR)/hp700rx-map.h \
+                  $(KBDIR)/hpitf-caps.h $(KBDIR)/hpitf-codes.h \
+                  $(KBDIR)/hpitf-geom.h $(KBDIR)/hpitf-map.h \
+                  $(KBDIR)/hpitfde-caps.h $(KBDIR)/hpitfde-map.h \
+                  $(KBDIR)/hpitffi-caps.h $(KBDIR)/hpitfsf-caps.h \
+                  $(KBDIR)/hpitfsf-map.h $(KBDIR)/hppc-codes.h \
+                  $(KBDIR)/hppc-map.h $(KBDIR)/hppcde-codes.h \
+                  $(KBDIR)/hppcde-map.h $(KBDIR)/hppcsf-map.h
+     ALL_KBDS_3 = $(KBDIR)/hppcsf700rx-map.h $(KBDIR)/hppcuk-caps.h \
+                  $(KBDIR)/hppcuk-codes.h $(KBDIR)/hppcuk-map.h \
+                  $(KBDIR)/hppcuk700rx-codes.h $(KBDIR)/hppcuk700rx-map.h \
+                  $(KBDIR)/hpps2din_de-map.h $(KBDIR)/hpps2din_us-map.h \
+                  $(KBDIR)/kinesis-caps.h $(KBDIR)/kinesis-codes.h \
+                  $(KBDIR)/kinesis-geom.h $(KBDIR)/kinesis-sparc-codes.h \
+                  $(KBDIR)/kinesis-sparc-map.h $(KBDIR)/ktx1000-caps.h \
+                  $(KBDIR)/ktx1000-codes.h $(KBDIR)/ktx1000-geom.h \
+                  $(KBDIR)/labtam-caps.h $(KBDIR)/labtam-codes.h \
+                  $(KBDIR)/labtam-map.h $(KBDIR)/libretto100-caps.h \
+                  $(KBDIR)/libretto100-codes.h $(KBDIR)/libretto100-geom.h \
+                  $(KBDIR)/lk201-caps.h $(KBDIR)/lk201-codes.h \
+                  $(KBDIR)/lk201-geom.h $(KBDIR)/lk201-map.h \
+                  $(KBDIR)/lk401-caps.h $(KBDIR)/lk401-codes.h \
+                  $(KBDIR)/lk401-map.h $(KBDIR)/lk401sf-caps.h \
+                  $(KBDIR)/lk401sf-map.h $(KBDIR)/lk401sfdp-map.h \
+                  $(KBDIR)/lk421-caps.h $(KBDIR)/lk421-codes.h \
+                  $(KBDIR)/lk421-geom.h $(KBDIR)/lk450-caps.h \
+                  $(KBDIR)/lk450-codes.h $(KBDIR)/lk450-map.h \
+                  $(KBDIR)/mac-caps.h $(KBDIR)/mac-codes.h
+     ALL_KBDS_4 = $(KBDIR)/mac-geom.h $(KBDIR)/mac-map.h \
+                  $(KBDIR)/macext2-codes.h $(KBDIR)/macext2-geom.h \
+                  $(KBDIR)/macstd-caps.h $(KBDIR)/macstd-codes.h \
+                  $(KBDIR)/macstd-geom.h $(KBDIR)/macstd-map.h \
+                  $(KBDIR)/mag3k-caps.h $(KBDIR)/mag3k-codes.h \
+                  $(KBDIR)/mag3k-map.h $(KBDIR)/magat-caps.h \
+                  $(KBDIR)/magat-codes.h $(KBDIR)/magat-geom.h \
+                  $(KBDIR)/magat-map.h $(KBDIR)/mklinux-codes.h \
+                  $(KBDIR)/mklinux-de-caps.h $(KBDIR)/mklinux-map.h \
+                  $(KBDIR)/mklinux-us-caps.h $(KBDIR)/ms104-caps.h \
+                  $(KBDIR)/ms104-codes.h $(KBDIR)/ms104-geom.h \
+                  $(KBDIR)/ms104-hpux-codes.h $(KBDIR)/ms104-sgi5-codes.h \
+                  $(KBDIR)/ms104-sparc-codes.h $(KBDIR)/ms104-sparc-map.h \
+                  $(KBDIR)/ms105-caps.h $(KBDIR)/ms105-codes.h \
+                  $(KBDIR)/ms105-geom.h $(KBDIR)/ms105-hpux-codes.h \
+                  $(KBDIR)/ms105-linux-map.h $(KBDIR)/ms105be-caps.h \
+                  $(KBDIR)/ms105de-caps.h $(KBDIR)/ms105es-caps.h \
+                  $(KBDIR)/ms105it-caps.h $(KBDIR)/ms105se-caps.h \
+                  $(KBDIR)/ms105se-codes.h $(KBDIR)/ms105sf-caps.h \
+                  $(KBDIR)/ms105si-caps.h $(KBDIR)/ncd101-caps.h
+     ALL_KBDS_5 = $(KBDIR)/ncd101-codes.h $(KBDIR)/ncd101-geom.h \
+                  $(KBDIR)/ncd101-map.h $(KBDIR)/ncd102-caps.h \
+                  $(KBDIR)/ncd102-codes.h $(KBDIR)/ncd102-map.h \
+                  $(KBDIR)/ncd102f-caps.h $(KBDIR)/ncd102f-codes.h \
+                  $(KBDIR)/ncd102f-map.h $(KBDIR)/ncd102n-caps.h \
+                  $(KBDIR)/ncd102n-codes.h $(KBDIR)/ncd102n-map.h \
+                  $(KBDIR)/ncd102sf-caps.h $(KBDIR)/ncd102sf-codes.h \
+                  $(KBDIR)/ncd102sf-map.h $(KBDIR)/ncd107-caps.h \
+                  $(KBDIR)/ncd107-codes.h $(KBDIR)/ncd107-map.h \
+                  $(KBDIR)/ncd108-caps.h $(KBDIR)/ncd108-codes.h \
+                  $(KBDIR)/ncd108-geom.h $(KBDIR)/ncd108-map.h \
+                  $(KBDIR)/ncd108de-caps.h $(KBDIR)/ncd108de-map.h \
+                  $(KBDIR)/ncd123-caps.h $(KBDIR)/ncd123-codes.h \
+                  $(KBDIR)/ncd123-geom.h $(KBDIR)/ncd123-map.h \
+                  $(KBDIR)/ncd123na-caps.h $(KBDIR)/ncd123na-codes.h \
+                  $(KBDIR)/ncd123na-geom.h $(KBDIR)/ncd123na-map.h \
+                  $(KBDIR)/ncd220-caps.h $(KBDIR)/ncd220-codes.h \
+                  $(KBDIR)/ncd220-map.h $(KBDIR)/ncd97-caps.h \
+                  $(KBDIR)/ncd97-codes.h $(KBDIR)/ncd97-geom.h \
+                  $(KBDIR)/ncd97-map.h $(KBDIR)/ncdpc-caps.h
+     ALL_KBDS_6 = $(KBDIR)/ncdpc-codes.h $(KBDIR)/ncdpc-map.h \
+                  $(KBDIR)/nws1250-caps.h $(KBDIR)/nws1250-codes.h \
+                  $(KBDIR)/nws1250-geom.h $(KBDIR)/nws1250-map.h \
+                  $(KBDIR)/nws3410-caps.h $(KBDIR)/nws3410-codes.h \
+                  $(KBDIR)/nws3410-geom.h $(KBDIR)/nws3410-map.h \
+                  $(KBDIR)/omni102-caps.h $(KBDIR)/omni102-codes.h \
+                  $(KBDIR)/omni102-geom.h $(KBDIR)/omniultra-caps.h \
+                  $(KBDIR)/omniultra-codes.h $(KBDIR)/omniultra-geom.h \
+                  $(KBDIR)/openwin101-codes.h $(KBDIR)/openwin104-codes.h \
+                  $(KBDIR)/openwin104-map.h $(KBDIR)/ortek-caps.h \
+                  $(KBDIR)/ortek-codes.h $(KBDIR)/ortek-geom.h \
+                  $(KBDIR)/pc101-2-caps.h $(KBDIR)/pc101-2-codes.h \
+                  $(KBDIR)/pc101-2-geom.h $(KBDIR)/pc101-2th-caps.h \
+                  $(KBDIR)/pc101-3-caps.h $(KBDIR)/pc101-3-codes.h \
+                  $(KBDIR)/pc101-3-geom.h $(KBDIR)/pc101-caps.h \
+                  $(KBDIR)/pc101-codes.h $(KBDIR)/pc101-geom.h \
+                  $(KBDIR)/pc102-2-codes.h $(KBDIR)/pc102-2-geom.h \
+                  $(KBDIR)/pc102-2de-caps.h $(KBDIR)/pc102-3-codes.h \
+                  $(KBDIR)/pc102-3-geom.h $(KBDIR)/pc102-3uk-caps.h \
+                  $(KBDIR)/pc102-caps.h $(KBDIR)/pc102-codes.h
+     ALL_KBDS_7 = $(KBDIR)/pc102-geom.h $(KBDIR)/pc102be-caps.h \
+                  $(KBDIR)/pc102de-caps.h $(KBDIR)/pc102es-caps.h \
+                  $(KBDIR)/pc102fr-caps.h $(KBDIR)/pc102it-caps.h \
+                  $(KBDIR)/pc102no-caps.h $(KBDIR)/pc102pt-caps.h \
+                  $(KBDIR)/pc102sf-caps.h $(KBDIR)/pc102sr-caps.h \
+                  $(KBDIR)/pc102uk-caps.h $(KBDIR)/pc104-2-codes.h \
+                  $(KBDIR)/pc104-caps.h $(KBDIR)/pc104-codes.h \
+                  $(KBDIR)/pc104-geom.h $(KBDIR)/pc105-codes.h \
+                  $(KBDIR)/pc105-geom.h $(KBDIR)/pc105ca-caps.h \
+                  $(KBDIR)/pc105ca-map.h $(KBDIR)/pc105cf-caps.h \
+                  $(KBDIR)/pc105cf-map.h $(KBDIR)/pc105da-caps.h \
+                  $(KBDIR)/pc105fr-caps.h $(KBDIR)/pc105is-caps.h \
+                  $(KBDIR)/pc105no-caps.h $(KBDIR)/pc105sw-caps.h \
+                  $(KBDIR)/pc105tr-caps.h $(KBDIR)/pc105uk-caps.h \
+                  $(KBDIR)/pc107-codes.h $(KBDIR)/pc107-geom.h \
+                  $(KBDIR)/pc107br-caps.h $(KBDIR)/pc84-caps.h \
+                  $(KBDIR)/pc84-codes.h $(KBDIR)/pc84-geom.h \
+                  $(KBDIR)/pck301-caps.h $(KBDIR)/pck301-codes.h \
+                  $(KBDIR)/pck301-geom.h $(KBDIR)/pcxal-codes.h \
+                  $(KBDIR)/pcxal-map.h $(KBDIR)/pcxal-r6-codes.h
+     ALL_KBDS_8 = $(KBDIR)/pcxal-r6-map.h $(KBDIR)/phasex-pxch2-codes.h \
+                  $(KBDIR)/phasex-pxch2-map.h $(KBDIR)/phasex110-codes.h \
+                  $(KBDIR)/phasex110-map.h $(KBDIR)/phasex110b-codes.h \
+                  $(KBDIR)/presario-caps.h $(KBDIR)/presario-codes.h \
+                  $(KBDIR)/presario-geom.h $(KBDIR)/rs2030-caps.h \
+                  $(KBDIR)/rs2030-codes.h $(KBDIR)/rs2030-map.h \
+                  $(KBDIR)/rs6k-aix-map.h $(KBDIR)/rs6k-caps.h \
+                  $(KBDIR)/rs6k-codes.h $(KBDIR)/rs6k-xc-map.h \
+                  $(KBDIR)/rs6kde-aix-map.h $(KBDIR)/rs6kde-caps.h \
+                  $(KBDIR)/rs6kde-codes.h $(KBDIR)/rt-caps.h \
+                  $(KBDIR)/rt-codes.h $(KBDIR)/rt-map.h \
+                  $(KBDIR)/rtsw-caps.h $(KBDIR)/rtsw-codes.h \
+                  $(KBDIR)/rtsw-map.h $(KBDIR)/rtsw8-map.h \
+                  $(KBDIR)/sco110-codes.h $(KBDIR)/sco110-map.h \
+                  $(KBDIR)/sgi-caps.h $(KBDIR)/sgi4-codes.h \
+                  $(KBDIR)/sgi4-r4-map.h $(KBDIR)/sgi4-r5-map.h \
+                  $(KBDIR)/sgi5-codes.h $(KBDIR)/sgi5-r5-map.h \
+                  $(KBDIR)/sgi5de-codes.h $(KBDIR)/sgi5de-r5-map.h \
+                  $(KBDIR)/sgi6de-r6-map.h $(KBDIR)/sgi6no-r6-map.h \
+                  $(KBDIR)/sgide-caps.h $(KBDIR)/shine106-codes.h
+     ALL_KBDS_9 = $(KBDIR)/shine106-geom.h $(KBDIR)/shine106pt-caps.h \
+                  $(KBDIR)/sn-codes.h $(KBDIR)/sn-map.h \
+                  $(KBDIR)/sun101a-codes.h $(KBDIR)/sun101a-xc-map.h \
+                  $(KBDIR)/sun2-caps.h $(KBDIR)/sun2-codes.h \
+                  $(KBDIR)/sun2-geom.h $(KBDIR)/sun2-xc-map.h \
+                  $(KBDIR)/sun3-caps.h $(KBDIR)/sun3-codes.h \
+                  $(KBDIR)/sun3-geom.h $(KBDIR)/sun3-xc-map.h \
+                  $(KBDIR)/sun4-caps.h $(KBDIR)/sun4-codes.h \
+                  $(KBDIR)/sun4-geom.h $(KBDIR)/sun4-linux-map.h \
+                  $(KBDIR)/sun4-ow-map.h $(KBDIR)/sun4-r6-map.h \
+                  $(KBDIR)/sun4-xc-map.h $(KBDIR)/sun4de-caps.h \
+                  $(KBDIR)/sun4de-codes.h $(KBDIR)/sun4de-geom.h \
+                  $(KBDIR)/sun4de-map.h $(KBDIR)/sun4es-caps.h \
+                  $(KBDIR)/sun4es-map.h $(KBDIR)/sun4sw-caps.h \
+                  $(KBDIR)/sun4sw-codes.h $(KBDIR)/sun4sw-geom.h \
+                  $(KBDIR)/sun4sw-map.h $(KBDIR)/sun5-caps.h \
+                  $(KBDIR)/sun5-codes.h $(KBDIR)/sun5-geom.h \
+                  $(KBDIR)/sun5-ow-map.h $(KBDIR)/sun5-r6-map.h \
+                  $(KBDIR)/sun5-xc-map.h $(KBDIR)/sun5de-caps.h \
+                  $(KBDIR)/sun5de-codes.h $(KBDIR)/sun5de-geom.h
+    ALL_KBDS_10 = $(KBDIR)/sun5de-ow-map.h $(KBDIR)/sun5es-caps.h \
+                  $(KBDIR)/sun5es-codes.h $(KBDIR)/sun5es-geom.h \
+                  $(KBDIR)/sun5es-ow-map.h $(KBDIR)/sun5fr-caps.h \
+                  $(KBDIR)/sun5fr-xc6-map.h $(KBDIR)/sun5ifc101-codes.h \
+                  $(KBDIR)/sun5jp-caps.h $(KBDIR)/sun5jp-codes.h \
+                  $(KBDIR)/sun5jp-geom.h $(KBDIR)/sun5jp-xc-map.h \
+                  $(KBDIR)/sun5pc-caps.h $(KBDIR)/sun5pc-codes.h \
+                  $(KBDIR)/sun5pc-ow-map.h $(KBDIR)/sun5pc-owde-map.h \
+                  $(KBDIR)/sun5pc-xc-map.h $(KBDIR)/sun5pc-xc2-map.h \
+                  $(KBDIR)/sun5pc-xc6-map.h $(KBDIR)/sun5sw-caps.h \
+                  $(KBDIR)/sun5sw-codes.h $(KBDIR)/sun5sw-geom.h \
+                  $(KBDIR)/sun5sw-ow-map.h $(KBDIR)/sun5sw-xc-map.h \
+                  $(KBDIR)/sun5swde-caps.h $(KBDIR)/sun5swde-map.h \
+                  $(KBDIR)/sun5swfr-caps.h $(KBDIR)/sun5swfr-codes.h \
+                  $(KBDIR)/sun5swfr-geom.h $(KBDIR)/sun5swfr-ow-map.h \
+                  $(KBDIR)/sun5uk-caps.h $(KBDIR)/sun5uk-codes.h \
+                  $(KBDIR)/sun5uk-geom.h $(KBDIR)/sun5uk-ow-map.h \
+                  $(KBDIR)/sunsh-6868-codes.h $(KBDIR)/sunsh-6868-geom.h \
+                  $(KBDIR)/sunsh-6868us-caps.h $(KBDIR)/tecra500-caps.h \
+                  $(KBDIR)/tecra500-codes.h $(KBDIR)/tecra500-geom.h
+    ALL_KBDS_11 = $(KBDIR)/tecra500-map.h $(KBDIR)/tek101-4-map.h \
+                  $(KBDIR)/tek101-c-codes.h $(KBDIR)/tek101-c-map.h \
+                  $(KBDIR)/tek101-caps.h $(KBDIR)/tek101-codes.h \
+                  $(KBDIR)/tek101-geom.h $(KBDIR)/tek101-map.h \
+                  $(KBDIR)/tek102-codes.h $(KBDIR)/tek102-de-caps.h \
+                  $(KBDIR)/tek102-de-map.h $(KBDIR)/tek102-geom.h \
+                  $(KBDIR)/tek119-codes.h $(KBDIR)/tek119-map.h \
+                  $(KBDIR)/tek200-caps.h $(KBDIR)/tek200-codes.h \
+                  $(KBDIR)/tek200-geom.h $(KBDIR)/tek200u-da-map.h \
+                  $(KBDIR)/tek200u-de-map.h $(KBDIR)/tek200u-fi-map.h \
+                  $(KBDIR)/tek200u-fr-map.h $(KBDIR)/tek200u-it-map.h \
+                  $(KBDIR)/tek200u-ka-map.h $(KBDIR)/tek200u-no-map.h \
+                  $(KBDIR)/tek200u-sp-map.h $(KBDIR)/tek200u-sw-map.h \
+                  $(KBDIR)/tek200u-swde-map.h $(KBDIR)/tek200u-uk-map.h \
+                  $(KBDIR)/tek200u-us-map.h $(KBDIR)/tek200v-us-map.h \
+                  $(KBDIR)/tek200xesc-us-map.h $(KBDIR)/tek200xf11-us-map.h \
+                  $(KBDIR)/tek401-codes.h $(KBDIR)/tek401-map.h \
+                  $(KBDIR)/tek401sf-map.h $(KBDIR)/tek401sfdp-map.h \
+                  $(KBDIR)/teksun4-codes.h $(KBDIR)/teksun4-map.h \
+                  $(KBDIR)/tekxn10-geom.h $(KBDIR)/tekxn10-sf-caps.h
+    ALL_KBDS_12 = $(KBDIR)/tekxn10-sf-codes.h $(KBDIR)/tekxn10-sf-map.h \
+                  $(KBDIR)/tm4000m-caps.h $(KBDIR)/tm4000m-codes.h \
+                  $(KBDIR)/tm4000m-geom.h $(KBDIR)/tm4000m-map.h \
+                  $(KBDIR)/tp560-codes.h $(KBDIR)/tp560-geom.h \
+                  $(KBDIR)/tp560es-caps.h $(KBDIR)/tp770-caps.h \
+                  $(KBDIR)/tp770-codes.h $(KBDIR)/tp770-geom.h \
+                  $(KBDIR)/trek-caps.h $(KBDIR)/trek-codes.h \
+                  $(KBDIR)/trek-geom.h $(KBDIR)/tt-caps.h \
+                  $(KBDIR)/tt-codes.h $(KBDIR)/tt-geom.h \
+                  $(KBDIR)/tt-map.h $(KBDIR)/uw102-codes.h \
+                  $(KBDIR)/uw102no-map.h $(KBDIR)/xfree86be-map.h \
+                  $(KBDIR)/xfree86br-map.h $(KBDIR)/xfree86da-map.h \
+                  $(KBDIR)/xfree86de-map.h $(KBDIR)/xfree86es-map.h \
+                  $(KBDIR)/xfree86fr-map.h $(KBDIR)/xfree86is-map.h \
+                  $(KBDIR)/xfree86it-map.h $(KBDIR)/xfree86no-map.h \
+                  $(KBDIR)/xfree86pt-map.h $(KBDIR)/xfree86sf-map.h \
+                  $(KBDIR)/xfree86si-map.h $(KBDIR)/xfree86sr-map.h \
+                  $(KBDIR)/xfree86sw-map.h $(KBDIR)/xfree86th-map.h \
+                  $(KBDIR)/xfree86tr-map.h $(KBDIR)/xfree86uk-map.h \
+                  $(KBDIR)/xfree86us-map.h $(KBDIR)/xinside-de-map.h
+    ALL_KBDS_13 = $(KBDIR)/xinside-map.h $(KBDIR)/xline101-codes.h \
+                  $(KBDIR)/xline101-map.h $(KBDIR)/xmint-caps.h \
+                  $(KBDIR)/xmint-codes.h $(KBDIR)/xmint-geom.h \
+                  $(KBDIR)/xmint-map.h $(KBDIR)/xoft1-map.h \
+                  $(KBDIR)/xoft2-codes.h $(KBDIR)/xoft2-map.h
+
+       ALL_KBDS = $(ALL_KBDS_1) $(ALL_KBDS_2) $(ALL_KBDS_3) $(ALL_KBDS_4) \
+                  $(ALL_KBDS_5) $(ALL_KBDS_6) $(ALL_KBDS_7) $(ALL_KBDS_8) \
+                  $(ALL_KBDS_9) $(ALL_KBDS_10) $(ALL_KBDS_11) $(ALL_KBDS_12) \
+                  $(ALL_KBDS_13)
+
+       ALL_HDRS = $(CURRENT_DIR)/version.h $(CURRENT_DIR)/xkeycaps.h \
+                  $(CURRENT_DIR)/XKeyCaps_ad.h $(CURRENT_DIR)/vroot.h \
+                  $(CURRENT_DIR)/KeyWidget.h $(CURRENT_DIR)/KeyWidgetP.h \
+                  $(CURRENT_DIR)/KbdWidget.h $(CURRENT_DIR)/KbdWidgetP.h \
+                  $(CURRENT_DIR)/kbddef.h $(KBDIR)/all-kbds.h \
+                  $(CURRENT_DIR)/keysym-compat.h \
+		  $(ALL_KBDS)
+
+       TARFILES = $(CURRENT_DIR)/README $(CURRENT_DIR)/xkeycaps.man \
+                  $(CURRENT_DIR)/xkeycaps.lsm $(CURRENT_DIR)/xkeycaps.lsm.sh \
+		  $(CURRENT_DIR)/Imakefile $(SRCS) \
+                  $(CURRENT_DIR)/build-map.sh $(CURRENT_DIR)/XKeyCaps.ad \
+                  $(CURRENT_DIR)/defining.txt $(CURRENT_DIR)/hierarchy.txt \
+		  $(CURRENT_DIR)/sgi-microsoft.txt \
+                  $(ALL_HDRS)
+            TAR = tar
+       COMPRESS = compress
+   COMPRESS_EXT = Z
+/**/#      COMPRESS = gzip --verbose --best
+/**/#  COMPRESS_EXT = gz
+
+ComplexProgramTarget(xkeycaps)
+
+all-kbds.o:  kbddef.h $(KBDIR)/all-kbds.h $(ALL_KBDS)
+KbdWidget.o: xkeycaps.h KeyWidget.h KeyWidgetP.h KbdWidget.h KbdWidgetP.h \
+             kbddef.h
+KeyWidget.o: xkeycaps.h KeyWidget.h KeyWidgetP.h KbdWidget.h KbdWidgetP.h
+actions.o:   xkeycaps.h KeyWidget.h KeyWidgetP.h KbdWidget.h
+commands.o:  xkeycaps.h KeyWidget.h KeyWidgetP.h KbdWidget.h KbdWidgetP.h \
+             kbddef.h
+info.o:      xkeycaps.h KeyWidget.h KeyWidgetP.h KbdWidgetP.h
+xkeycaps.o:  xkeycaps.h KeyWidget.h KbdWidget.h  KbdWidgetP.h XKeyCaps_ad.h \
+             version.h
+guess.o:     xkeycaps.h KeyWidget.h KbdWidget.h  KbdWidgetP.h kbddef.h
+
+XKeyCaps_ad.h: XKeyCaps.ad
+	sh ad2c XKeyCaps.ad > XKeyCaps_ad.h
+
+/* This really makes me sick... */
+tar: $(TARFILES)
+	@NAME=`sed -n							    \
+  's/[^0-9]*\([0-9]\.[0-9][0-9]*\).*/xkeycaps-\1/p' version.h` ;	    \
+  ./build-deps.sh ;							    \
+  sh ./xkeycaps.lsm.sh > xkeycaps.lsm.$$$$ ;				    \
+  mv xkeycaps.lsm.$$$$ xkeycaps.lsm ;					    \
+  $(MAKE) $(MFLAGS) tar_hack NAME=$$NAME CURRENT_DIR=$$NAME
+
+tar_hack::
+	@rm -f $(NAME) ; ln -s . $(NAME) ;				    \
+  set -e ; 								    \
+  echo creating tar file ${NAME}.tar.$(COMPRESS_EXT)... ;		    \
+  $(TAR) -vchf - $(TARFILES)						    \
+  | $(COMPRESS) > $(NAME).tar.$(COMPRESS_EXT) ;				    \
+  rm $(NAME) ;								    \
+  echo "" ; ls -lg $(NAME).tar.$(COMPRESS_EXT) ; echo ""
+
+index:
+	@./xkeycaps -help 2>&1 | grep '[-] ' | sed -e 's/.*- /  /'
+index2:
+	@$(MAKE) index | sed -e 's/$$/<BR>/'
